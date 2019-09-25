@@ -1,0 +1,4 @@
+anytree
+matplotlib
+pandas
+praw
