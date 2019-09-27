@@ -2,7 +2,8 @@ import praw
 import pandas as pd
 from time import sleep
 
-def submission_to_dict(post:praw.models.Submission) -> dict:
+
+def submission_to_dict(post: praw.models.Submission) -> dict:
     return {
         "id": post.id,
         "title": post.title,
@@ -15,10 +16,11 @@ def submission_to_dict(post:praw.models.Submission) -> dict:
         "num_comments": post.num_comments,
         "permalink": post.permalink,
         "upvotes": post.score,
-        "upvote_ratio": post.upvote_ratio
+        "upvote_ratio": post.upvote_ratio,
     }
-    
-def comment_to_dict(comment:praw.models.Comment) -> dict:
+
+
+def comment_to_dict(comment: praw.models.Comment) -> dict:
     return {
         "id": comment.id,
         "time": comment.created_utc,
@@ -34,19 +36,26 @@ def comment_to_dict(comment:praw.models.Comment) -> dict:
         "upvotes": comment.score,
     }
 
-def get_reddit_data(conn:praw.Reddit, subreddit:str) -> tuple:
+
+def get_reddit_data(conn: praw.Reddit, subreddit: str) -> tuple:
     submissions = []
     comments = []
 
     for submission in conn.subreddit(subreddit).top(limit=None):
-        print("Submission {num}: {title}".format(num=len(submissions), title=submission.title))
+        print(
+            "Submission {num}: {title}".format(
+                num=len(submissions), title=submission.title
+            )
+        )
         submissions.append(submission_to_dict(submission))
 
         # Now iterate over the comments
         post_comments = submission.comments.list()
 
         # Query API until we get all the comments
-        while any(isinstance(comment, praw.models.MoreComments) for comment in post_comments):
+        while any(
+            isinstance(comment, praw.models.MoreComments) for comment in post_comments
+        ):
             sleep(1)
             submission.comments.replace_more(limit=None)
             post_comments = submission.comments.list()
