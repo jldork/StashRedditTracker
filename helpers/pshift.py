@@ -14,7 +14,29 @@ def fire_away(uri):
     return json.loads(response.content)
 
 
-def map_posts(posts):
+def comments_to_dict(comments):
+    return list(
+        map(
+            lambda post: {
+                "id": comment['id'],
+                "time": comment['created_utc'],
+                "author": comment['author'],
+                "is_distinguished": comment['distinguished'],
+                "is_OP": comment['is_submitter'],
+                "body": comment['body'],
+                "submission_id": comment['link_id'],
+                "parent_id": comment['parent_id'],
+                "num_top_level_replies": len(comment['replies']),
+                "permalink": comment['permalink'],
+                "is_stickied": comment['stickied'],
+                "upvotes": comment['score'],
+            },
+            comments,
+        )
+    )
+
+
+def submissions_to_dict(posts):
     return list(
         map(
             lambda post: {
@@ -55,7 +77,7 @@ def pull_posts_for(subreddit, start_at, end_at):
     SIZE = 500
     URI = r"https://api.pushshift.io/reddit/search/submission?subreddit={}&after={}&before={}&size={}"
 
-    post_collections = map_posts(
+    post_collections = submissions_to_dict(
         make_request(URI.format(subreddit, start_at, end_at, SIZE))["data"]
     )
 
@@ -63,7 +85,7 @@ def pull_posts_for(subreddit, start_at, end_at):
     while n == SIZE:
         last = post_collections[-1]
         new_start_at = last["created_utc"] - (10)
-        more_posts = map_posts(
+        more_posts = submissions_to_dict(
             make_request(URI.format(subreddit, new_start_at, end_at, SIZE))["data"]
         )
 
@@ -71,6 +93,14 @@ def pull_posts_for(subreddit, start_at, end_at):
         post_collections.extend(more_posts)
 
     return post_collections
+
+def pull_comments_for(post_id:str):
+    SIZE = 1500
+    URI = r"https://api.pushshift.io/reddit/search/comments?link_id={}"
+    comment_collections = comments_to_dict(
+        make_request(URI.format(post_id, SIZE))["data"]
+    )
+    return comment_collections
 
 
 def give_me_intervals(start_at, number_of_days_per_interval=1):
@@ -87,13 +117,18 @@ def give_me_intervals(start_at, number_of_days_per_interval=1):
         yield int(start_at), int(end)
 
 
-def get_subreddit_submissions(subreddit: str) -> pd.DataFrame:
+def get_reddit_data(subreddit: str) -> pd.DataFrame:
     start_at = math.floor((datetime.utcnow() - timedelta(days=365)).timestamp())
 
     posts = []
+    comments = []
+
     for interval in give_me_intervals(start_at):
-        pulled_posts = pull_posts_for(subreddit, interval[0], interval[1])
-        posts.extend(pulled_posts)
+        posts.extend(pull_posts_for(subreddit, interval[0], interval[1]))
         time.sleep(0.500)
 
-    return pd.DataFrame(posts)
+    for post in posts:
+        comments.extend(pull_comments_for(post['id']))
+        time.sleep(0.500)
+
+    return pd.DataFrame(posts), pd.DataFrame(comments)

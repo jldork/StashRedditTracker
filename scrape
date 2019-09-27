@@ -21,8 +21,9 @@ def scrape_with_praw(subreddit: str) -> None:
 
 
 def scrape_with_pshift(subreddit: str) -> None:
-    submissions = helpers.pshift.get_subreddit_submissions(subreddit)
+    submissions, comments = helpers.pshift.get_reddit_data(subreddit)
     submissions.to_csv("data/{}/submissions.csv".format(subreddit))
+    submissions.to_csv("data/{}/comments.csv".format(subreddit))
 
 
 if __name__ == "__main__":
