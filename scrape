@@ -1,0 +1,43 @@
+#!./venv/bin/python3
+
+import os
+import sys
+import praw
+import math
+import helpers.pshift
+import helpers.praw
+
+def scrape_with_praw(subreddit:str) -> None:
+    reddit = praw.Reddit(
+        client_id=os.getenv('CLIENT_ID'), 
+        client_secret=os.getenv('CLIENT_SECRET'),
+        user_agent=os.getenv('USER_AGENT')
+    )
+    submissions, comments = helpers.praw.get_reddit_data(reddit, subreddit)
+    
+    submissions.to_csv('data/{}/submissions.csv'.format(subreddit))
+    comments.to_csv('data/{}/comments.csv'.format(subreddit))
+    
+def scrape_with_pshift(subreddit:str) -> None:
+    submissions = helpers.pshift.get_subreddit_submissions(subreddit)
+    submissions.to_csv('data/{}/submissions.csv'.format(subreddit))
+
+
+
+if __name__ == "__main__":
+    # Check the arguments
+    if len(sys.argv) == 3 and sys.argv[1] == 'praw':
+        scrape_with_praw(sys.argv[2])
+    elif len(sys.argv) == 3 and sys.argv[1] == 'pshift':
+        scrape_with_pshift(sys.argv[2])
+    else:
+        print("")
+        print("\n  Usage: ./scrape [praw or pshift] [subreddit name]")
+        print("\n    e.g. ./scrape praw stashinvest")
+        print("         ./scrape pshift wallstreetbets")
+        print("\n    We recommend pshift for comment threads over 1000 depth\n")
+            
+            
+    
+    
+    

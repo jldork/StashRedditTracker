@@ -1,4 +1,6 @@
-anytree
+seaborn
+gensim
+pyLDAvis
 matplotlib
 pandas
 praw

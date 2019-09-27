@@ -1,7 +1,3 @@
-#!/usr/bin/python3
-
-import os
-import sys
 import praw
 import pandas as pd
 from time import sleep
@@ -59,27 +55,3 @@ def get_reddit_data(conn:praw.Reddit, subreddit:str) -> tuple:
 
     return pd.DataFrame(submissions), pd.DataFrame(comments)
 
-def main(subreddit:str) -> None:
-    reddit = praw.Reddit(
-        client_id=os.getenv('CLIENT_ID'), 
-        client_secret=os.getenv('CLIENT_SECRET'),
-        user_agent=os.getenv('USER_AGENT')
-    )
-    submissions, comments = get_reddit_data(reddit, subreddit)
-    
-    submissions.to_csv('data/{}/submissions.csv'.format(subreddit))
-    comments.to_csv('data/{}/comments.csv'.format(subreddit))
-    
-
-if __name__ == "__main__":
-    # Check the arguments
-    if len(sys.argv) == 1 or len(sys.argv) > 2:
-        print("")
-        print("  Usage: ./scrape [subreddit]")
-        print("")
-    else:
-        main(sys.argv[1])
-        
-    
-    
-    
