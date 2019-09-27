@@ -15,45 +15,39 @@ def fire_away(uri):
 
 
 def comments_to_dict(comments):
-    return list(
-        map(
-            lambda post: {
-                "id": comment['id'],
-                "time": comment['created_utc'],
-                "author": comment['author'],
-                "is_distinguished": comment['distinguished'],
-                "is_OP": comment['is_submitter'],
-                "body": comment['body'],
-                "submission_id": comment['link_id'],
-                "parent_id": comment['parent_id'],
-                "num_top_level_replies": len(comment['replies']),
-                "permalink": comment['permalink'],
-                "is_stickied": comment['stickied'],
-                "upvotes": comment['score'],
-            },
-            comments,
-        )
-    )
+    return [
+        {
+            "id": comment.get("id"),
+            "time": comment.get("created_utc"),
+            "author": comment.get("author"),
+            "is_OP": comment.get("is_submitter"),
+            "body": comment.get("body"),
+            "submission_id": comment.get("link_id"),
+            "parent_id": comment.get("parent_id"),
+            "permalink": comment.get("permalink"),
+            "is_stickied": comment.get("stickied"),
+            "upvotes": comment.get("score"),
+        }
+        for comment in comments
+    ]
 
 
 def submissions_to_dict(posts):
-    return list(
-        map(
-            lambda post: {
-                "id": post["id"],
-                "title": post["title"],
-                "time": post["created_utc"],
-                "author": post["author"],
-                "selfpost": post["is_self"],
-                "text": post["selftext"],
-                "link": post["url"],
-                "num_comments": post["num_comments"],
-                "permalink": post["permalink"],
-                "upvotes": post["score"]
-            },
-            posts,
-        )
-    )
+    return [
+        {
+            "id": post.get("id"),
+            "title": post.get("title"),
+            "time": post.get("created_utc"),
+            "author": post.get("author"),
+            "selfpost": post.get("is_self"),
+            "text": post.get("selftext"),
+            "link": post.get("url"),
+            "num_comments": post.get("num_comments"),
+            "permalink": post.get("permalink"),
+            "upvotes": post.get("score"),
+        }
+        for post in posts
+    ]
 
 
 def make_request(uri, max_retries: int = 5):
@@ -92,7 +86,8 @@ def pull_posts_for(subreddit, start_at, end_at):
 
     return post_collections
 
-def pull_comments_for(post_id:str):
+
+def pull_comments_for(post_id: str):
     SIZE = 1500
     URI = r"https://api.pushshift.io/reddit/search/comments?link_id={}"
     comment_collections = comments_to_dict(
@@ -126,8 +121,8 @@ def get_reddit_data(subreddit: str) -> pd.DataFrame:
         time.sleep(0.500)
 
     for post in posts:
-        comments.extend(pull_comments_for(post['id']))
-        print(post['title'], len(comments))
+        comments.extend(pull_comments_for(post["id"]))
+        print(post["title"], len(comments))
         time.sleep(0.500)
 
     return pd.DataFrame(posts), pd.DataFrame(comments)
