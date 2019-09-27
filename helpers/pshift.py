@@ -47,11 +47,9 @@ def submissions_to_dict(posts):
                 "selfpost": post["is_self"],
                 "text": post["selftext"],
                 "link": post["url"],
-                "flair": post["link_flair_text"],
                 "num_comments": post["num_comments"],
                 "permalink": post["permalink"],
-                "upvotes": post["score"],
-                "upvote_ratio": post["upvote_ratio"],
+                "upvotes": post["score"]
             },
             posts,
         )
@@ -84,7 +82,7 @@ def pull_posts_for(subreddit, start_at, end_at):
     n = len(post_collections)
     while n == SIZE:
         last = post_collections[-1]
-        new_start_at = last["created_utc"] - (10)
+        new_start_at = last["time"] - (10)
         more_posts = submissions_to_dict(
             make_request(URI.format(subreddit, new_start_at, end_at, SIZE))["data"]
         )
@@ -129,6 +127,7 @@ def get_reddit_data(subreddit: str) -> pd.DataFrame:
 
     for post in posts:
         comments.extend(pull_comments_for(post['id']))
+        print(post['title'], len(comments))
         time.sleep(0.500)
 
     return pd.DataFrame(posts), pd.DataFrame(comments)
