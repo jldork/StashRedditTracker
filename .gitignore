@@ -1,3 +1,7 @@
+models
+logs
+airflow.*
+unittests.cfg
 venv
 .vscode
 *.ipynb

@@ -1,61 +1,60 @@
 import pandas as pd
 from datetime import datetime
-from helper.timer import Timer
+from helpers.timer import Timer
 
 def merge_parent_and_child_comments(submissions:pd.DataFrame, comments:pd.DataFrame):
-    just_comments = comments[['id','time','body','parent_id', 'subreddit']].copy()
-    rows_with_no_parent = just_comments[just_comments['parent_id'].apply(lambda x: type(x)) != str].index
-    just_comments.drop(rows_with_no_parent, inplace=True, axis=0)
+    # Merge comments with their parent comment
+    just_comments = comments[['id','time','body','parent_id', 'upvotes']].copy()
     just_comments['parent_id'] = just_comments['parent_id'].apply(lambda x: x.split('_')[1])
-
+    
+    # Merge comments with their parent comment
     parent_comments = just_comments.copy()
-    parent_comments.drop(['parent_id', 'time', 'subreddit'], inplace=True, axis=1)
+    parent_comments.drop(['parent_id', 'time'], inplace=True, axis=1)
     parent_comments.rename(columns={"id": "parent_id"}, inplace=True)
 
+    # Coalesce some fields
     merged_comments = just_comments.merge(parent_comments, on='parent_id', how='left')
-    merged_comments.columns = ['id','time','comment_text','parent_id','subreddit','parent_text']
+    merged_comments['upvotes'] = merged_comments['upvotes_x'].combine_first(merged_comments['upvotes_y'])
+    merged_comments.drop(['upvotes_x','upvotes_y'], axis=1, inplace=True)
+    merged_comments.columns = ['id','time','comment_text','parent_id','parent_text','upvotes']
 
-    subs = submissions[['id','title','text']].copy()
+    # Combine Submission to a Top-level comment
+    subs = submissions[['id','title','text','time', 'upvotes']].copy()
     subs.rename(columns={'id':'parent_id'}, inplace=True)
-    merged_comments = merged_comments.merge(subs, on='parent_id', how='left')
-
-    merged_comments.fillna('', inplace=True)
-    merged_comments['merged_text'] = merged_comments['comment_text'] + ' ' \
-    + merged_comments['parent_text'] + \
-    ' ' + merged_comments['title'] + \
-    ' ' + merged_comments['text']
+    merged_comments = merged_comments.merge(subs, on='parent_id', how='outer')
     
-    df = merged_comments[['id','time','subreddit','merged_text']]
+    # Coalesce the columns so we don't have null values.
+    merged_comments['time'] = merged_comments['time_x'].combine_first(merged_comments['time_y'])
+    merged_comments['upvotes'] = merged_comments['upvotes_x'].combine_first(merged_comments['upvotes_y']).astype(int).fillna(0)
+    merged_comments['id'] = merged_comments['id'].combine_first(merged_comments['parent_id']).fillna('')
+    merged_comments['orig_text'] = merged_comments['comment_text'].combine_first(merged_comments['parent_text']).fillna('')
     
-    def safe_convert_to_numeric(unknown):
-        try:
-            return float(unknown)
-        except:
-            return str(unknown)
+    # Add all the text togethaaaa
+    merged_comments['merged_text'] = merged_comments['comment_text'].fillna('') + ' ' + merged_comments['parent_text'].fillna('') + \
+                                    ' ' + merged_comments['title'].fillna('') + ' ' + merged_comments['text'].fillna('')
     
-    df['time'] = df['time'].apply(safe_convert_to_numeric)
-    df['time'] = df['time'].apply(datetime.fromtimestamp)
+    df = merged_comments[['id','time','orig_text','merged_text','upvotes']].copy()
+    
+    df.loc[:,'time'] = df.loc[:,'time'].apply(datetime.fromtimestamp)
     return df.rename(columns={'merged_text':'text'})
 
 def run():
     with Timer('Merging Comment and Post Data from Subreddits'):
-        submissions = dict()
-        comments = dict()
+        submissions = pd.read_csv('./data/stashinvest/submissions.csv')
+        submissions.drop(submissions.columns[0], inplace=True, axis=1)
+        submissions.drop(submissions[submissions['author'] == 'stashofficial'].index, axis=0, inplace=True)
         
-        for subreddit in ['stashinvest', 'personalfinance']:
-            submissions[subreddit] = pd.read_csv('./data/{}/submissions.csv'.format(subreddit))
-            submissions[subreddit].drop(submissions[subreddit].columns[0], inplace=True, axis=1)
-            submissions[subreddit]['subreddit'] = subreddit 
-
-            comments[subreddit] = pd.read_csv('./data/{}/comments.csv'.format(subreddit))
-            comments[subreddit].drop(comments[subreddit].columns[0], inplace=True, axis=1)
-            comments[subreddit]['subreddit'] = subreddit
-
-        submissions = pd.concat(submissions.values())
-        comments = pd.concat(comments.values())
+        comments = pd.read_csv('./data/stashinvest/comments.csv')
+        comments.drop(comments.columns[0], inplace=True, axis=1)
+        comments.drop(comments[comments['author'] == 'stashofficial'].index, axis=0, inplace=True)
+        comments.drop(comments[comments['body']=='[deleted]'].index, axis=0, inplace=True)
 
         merged = merge_parent_and_child_comments(submissions, comments)
-        merged.to_csv('./data/tmp/merged.csv')
+        merged.to_pickle('./data/tmp/merged.pkl')
+
+        print("\nSample")
+        print(merged.head(),"\n")
+        
     
 if __name__=='__main__':
     run()
