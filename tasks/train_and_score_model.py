@@ -34,7 +34,6 @@ def topic_count_selection(
         cm = CoherenceModel(model=lm, texts=tokenized_docs, dictionary=dictionary, coherence='c_v')
         c_v.append(cm.get_coherence())
     
-    import pdb;pdb.set_trace()
     return lm_list, c_v
 
 
@@ -81,7 +80,7 @@ def get_topic_model_scores(df,model, seen=True):
     """
     scores = model.load_document_topics() if seen else model[df['bow']]
     
-    i = 0;
+    i = 0
     # The index is in order, you can check with
     # set(range(len(df.index))) - set(df.index)
     for score in scores:
@@ -123,10 +122,10 @@ def run():
             plot_coherence(test_range, scores).savefig('./models/MALLET/ModelCoherence.png')
 
             # Let's save the model with highest coherence
-            num_topics = rtest_range[0]+scores.index(max(scores))
+            num_topics = scores.index(max(scores))
             topic_model = list_of_models[num_topics]
             
-            print(f"* Chosen Model with {num_topics} topics")
+            print(f"* Chosen Model with {test_range[0] + num_topics} topics")
             with open('./models/MALLET/mallet_model.pkl','wb') as modelfile:
                 pickle.dump(topic_model, modelfile)
             with open('./models/MALLET/mallet_corpus.pkl','wb') as corpusfile:

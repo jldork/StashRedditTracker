@@ -1,0 +1,7 @@
+#!/bin/bash
+
+venv/bin/python tasks/reddit_scraper.py &&
+venv/bin/python tasks/merge_data.py &&
+venv/bin/python tasks/preprocess_data.py &&
+venv/bin/python tasks/train_and_score_model.py &&
+venv/bin/python tasks/score_sentiment.py
