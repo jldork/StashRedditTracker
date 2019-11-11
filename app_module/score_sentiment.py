@@ -50,7 +50,13 @@ def run(env:str='edge'):
 
         with Timer('Append Flair Sentiment Scores'):
             df = get_flair_sentiment(df)
-
+        
+        df = df[[
+            'id','time','Topic: 1','Topic: 2',
+            'Topic: 3','Topic: 4','Topic: 5','Topic: 6',
+            'Topic','vader_neg','vader_neu','vader_pos',
+            'vader_compount','flair_sentiment','flair_confidence'
+            ]]
         df.to_parquet(f's3://stash-de-source-{env}/source_social.db/reddit_scores/process_date={datetime.today().strftime("%Y-%m-%d")}/batch.parquet')
 
         print("\nSample")
