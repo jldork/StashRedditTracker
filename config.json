@@ -1,0 +1,23 @@
+{
+  "template_name": "af_emr",
+  "template_version": "1.0.0",
+
+  "type": "job",
+  "job_type": "emr",
+  "language": "python",
+  "project_name": "reddit_topic_model",
+  "repo": "stash-analytics",
+  "team": "data_science",
+  "version": "1.0.0",
+
+  "env": {
+    "local": {
+    },
+    "edge": {
+    },
+    "staging": {
+    },
+    "prod": {
+    }
+  }
+}

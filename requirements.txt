@@ -1,7 +1,5 @@
-git+git://github.com/rwalk/gsdmm.git
 seaborn
 gensim
 pyLDAvis
 matplotlib
 pandas
-praw

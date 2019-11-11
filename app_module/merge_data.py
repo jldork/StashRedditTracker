@@ -40,17 +40,21 @@ def merge_parent_and_child_comments(submissions:pd.DataFrame, comments:pd.DataFr
 
 def run():
     with Timer('Merging Comment and Post Data from Subreddits'):
-        submissions = pd.read_csv('./data/stashinvest/submissions.csv')
-        submissions.drop(submissions.columns[0], inplace=True, axis=1)
+        data_dir = '/home/hadoop/reddit_topic_model/app_module/data/'
+        
+        with open(data_dir+'stashinvest/reddit_submissions.parquet', 'rb') as submissions_file:
+            submissions = pd.read_parquet(submissions_file, engine='pyarrow')
+
         submissions.drop(submissions[submissions['author'] == 'stashofficial'].index, axis=0, inplace=True)
         
-        comments = pd.read_csv('./data/stashinvest/comments.csv')
-        comments.drop(comments.columns[0], inplace=True, axis=1)
+        with open(data_dir+'stashinvest/reddit_comments.parquet', 'rb') as comments_file:
+            comments = pd.read_parquet(comments_file, engine='pyarrow')
+
         comments.drop(comments[comments['author'] == 'stashofficial'].index, axis=0, inplace=True)
         comments.drop(comments[comments['body']=='[deleted]'].index, axis=0, inplace=True)
 
         merged = merge_parent_and_child_comments(submissions, comments)
-        merged.to_pickle('./data/tmp/merged.pkl')
+        merged.to_pickle(data_dir+'tmp/merged.pkl')
 
         print("\nSample")
         print(merged.head(),"\n")

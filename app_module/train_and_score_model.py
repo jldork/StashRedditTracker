@@ -25,10 +25,12 @@ def topic_count_selection(
     lm_list = []
     for num_topics in range(test_range[0], test_range[1]):
         lm = LdaMallet(
-            '/Users/jamesleung/Workspace/Mallet/bin/mallet', 
+            '/home/hadoop/Mallet-master/bin/mallet', 
             corpus=corpus, 
             num_topics=num_topics, 
-            id2word=dictionary, iterations=1000)
+            id2word=dictionary, iterations=1000,
+            prefix=f'{os.getcwd()}/models/MALLET/',
+            random_seed=42)
         lm_list.append(lm)
         
         cm = CoherenceModel(model=lm, texts=tokenized_docs, dictionary=dictionary, coherence='c_v')
@@ -37,7 +39,7 @@ def topic_count_selection(
     return lm_list, c_v
 
 
-def get_corpus_and_dict(df, tokens_column):
+def get_corpus_and_dict(df, tokens_column, seen=True):
     """
     A Corpus is an iterable collection of Documents that your model is trained on. 
     - e.g. all news articles since 2018
@@ -98,23 +100,25 @@ def get_topic_model_scores(df,model, seen=True):
 
 def run():
     # Get the Preprocessed Dataset
-    prepared_df = pd.read_pickle('./data/tmp/preprocessed.pkl')
-    df, corpus, dictionary = get_corpus_and_dict(prepared_df, 'tokens')
+    df = pd.read_pickle('./data/tmp/preprocessed.pkl')
         
     if os.path.isfile('./models/MALLET/mallet_model.pkl'):
         # Let's not do any model retraining without building in topic stability constraints
         #     e.g. number of docs or tokens now in different topics
         
         seen = False # Data we provide is new and unseen for the model
-        with open('models/MALLET/mallet_model.pkl','rb') as modelfile:
+        with open('./models/MALLET/mallet_model.pkl','rb') as modelfile:
             topic_model = pickle.load(modelfile)
-        
+
+        with open('./models/MALLET/mallet_dict.pkl','rb') as dictfile:
+            dictionary = pickle.load(dictfile)
+            df['bow'] = df['tokens'].apply(dictionary.doc2bow)
+
     else:
-        
-        
         seen = True # any data we provide is used to train the model
         with Timer('Train the LDA Model'):
             test_range = (5,50)
+            df, corpus, dictionary = get_corpus_and_dict(df, 'tokens')
             list_of_models, scores = topic_count_selection(
                 dictionary, corpus, list(df['tokens']), test_range
             )
@@ -122,12 +126,18 @@ def run():
             plot_coherence(test_range, scores).savefig('./models/MALLET/ModelCoherence.png')
 
             # Let's save the model with highest coherence
-            num_topics = scores.index(max(scores))
-            topic_model = list_of_models[num_topics]
+            num_topics = test_range[0] + scores.index(max(scores)) + 1
+            topic_model = LdaMallet(
+                '/home/hadoop/Mallet-master/bin/mallet', 
+                corpus=corpus, 
+                num_topics=num_topics, 
+                id2word=dictionary, iterations=1000,
+                prefix=f'{os.getcwd()}/models/MALLET/',
+                random_seed=42)
             
-            print(f"* Chosen Model with {test_range[0] + num_topics} topics")
+            print(f"* Chosen Model with {num_topics} topics")
             with open('./models/MALLET/mallet_model.pkl','wb') as modelfile:
-                pickle.dump(topic_model, modelfile)
+                topic_model.save(modelfile)
             with open('./models/MALLET/mallet_corpus.pkl','wb') as corpusfile:
                 pickle.dump(corpus, corpusfile)
             with open('./models/MALLET/mallet_dict.pkl','wb') as dictfile:

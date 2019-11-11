@@ -1,5 +1,6 @@
 import flair
 import operator
+import argparse
 import pandas as pd
 from helpers.timer import Timer
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
@@ -36,12 +37,12 @@ def get_flair_sentiment(df):
     df['flair_sentence'] = df['text'].apply(flair.data.Sentence)
     df['flair_sentence'].apply(flair_sentiment.predict)
     df['flair_sentiment'] = df['flair_sentence'].apply(lambda x: x.labels[0].value)
-    df['flair_confidence'] = df['flair_sentence'].apply(lambda x: x.labels[0].value) 
+    df['flair_confidence'] = df['flair_sentence'].apply(lambda x: x.labels[0].score) 
 
     return df.drop('flair_sentence', axis=1)
 
 
-def run():
+def run(env:str='edge'):
     df = pd.read_pickle('./data/tmp/scored.pkl')
     with Timer("Add Sentiment Analyses"):    
         with Timer('Append Vader Sentiment Scores'):
@@ -50,10 +51,15 @@ def run():
         with Timer('Append Flair Sentiment Scores'):
             df = get_flair_sentiment(df)
 
-        df.to_pickle('./data/tmp/final.pkl')
+        df.to_parquet(f's3://stash-de-source-{env}/source_social.db/reddit_scores/process_date={datetime.today().strftime("%Y-%m-%d")}/batch.parquet')
 
         print("\nSample")
         print(df.head(),"\n")
     
 if __name__ == '__main__':
-    run()
+    parser = argparse.ArgumentParser(
+        description='Score and upload to [env]')
+    parser.add_argument(
+        'env', type=str, help='Environment to create Hive tables and upload data:\n\n\tvalid values: edge | prod')
+    args = parser.parse_args()
+    run(args.env)
