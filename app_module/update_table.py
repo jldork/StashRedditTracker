@@ -2,6 +2,7 @@ import argparse
 import pandas as pd
 from datetime import datetime
 from pyspark.sql import SparkSession
+from helpers.timer import Timer
 
 def run(env):
     with Timer('Updating Table with New Partition'):
@@ -10,7 +11,7 @@ def run(env):
         spark_session.sql(f"""
         ALTER TABLE source_social.reddit_scores
         ADD IF NOT EXISTS PARTITION(process_date='{datetime.today().strftime("%Y-%m-%d")}')
-        LOCATION "s3://stash-de-source-{env}/source_social.db/reddit_scores/process_date={datetime.today().strftime("%Y-%m-%d")}";
+        LOCATION "s3://stash-de-source-{env}/source_social.db/reddit_scores/process_date={datetime.today().strftime("%Y-%m-%d")}"
         """)
     
 if __name__=='__main__':

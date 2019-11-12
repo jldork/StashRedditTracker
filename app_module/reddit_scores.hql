@@ -11,9 +11,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS source_social.reddit_scores (
     vader_neg FLOAT,
     vader_neu FLOAT,
     vader_pos FLOAT,
-    vader_compount FLOAT,
-    flair_sentiment STRING,
-    flair_confidence FLOAT
+    vader_compound FLOAT
 )
 PARTITIONED BY (process_date DATE)
 STORED AS parquet

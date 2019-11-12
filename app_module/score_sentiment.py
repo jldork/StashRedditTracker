@@ -2,6 +2,7 @@ import flair
 import operator
 import argparse
 import pandas as pd
+from datetime import datetime
 from helpers.timer import Timer
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
@@ -48,14 +49,15 @@ def run(env:str='edge'):
         with Timer('Append Vader Sentiment Scores'):
             df = get_vader_sentiment(df)
 
-        with Timer('Append Flair Sentiment Scores'):
-            df = get_flair_sentiment(df)
+        # This takes approx. 2.5 hours... Not worth it at the moment
+        # with Timer('Append Flair Sentiment Scores'):
+        #     df = get_flair_sentiment(df)
         
         df = df[[
             'id','time','Topic: 1','Topic: 2',
             'Topic: 3','Topic: 4','Topic: 5','Topic: 6',
             'Topic','vader_neg','vader_neu','vader_pos',
-            'vader_compount','flair_sentiment','flair_confidence'
+            'vader_compound'
             ]]
         df.to_parquet(f's3://stash-de-source-{env}/source_social.db/reddit_scores/process_date={datetime.today().strftime("%Y-%m-%d")}/batch.parquet')
 
